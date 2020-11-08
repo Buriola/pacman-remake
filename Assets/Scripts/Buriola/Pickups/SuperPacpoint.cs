@@ -6,14 +6,11 @@ namespace Buriola.Pickups
     {
         public override void OnEaten()
         {
-            //Same as base
             base.OnEaten();
 
             if (GameBoard.Instance != null)
             {
-                //But triggers the board event to scare ghosts
-                if(GameBoard.Instance.onSuperPacpointEaten != null)
-                    GameBoard.Instance.onSuperPacpointEaten.Invoke();
+                GameBoard.Instance.InvokeSuperPacpointEvent();
             }
         }
     }

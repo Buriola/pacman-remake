@@ -7,6 +7,8 @@ using Buriola.Player;
 using Buriola.AI;
 using Buriola.Board.Data;
 using Buriola.Pickups;
+using System;
+using UnityEngine.Serialization;
 
 namespace Buriola.Board
 {
@@ -16,106 +18,79 @@ namespace Buriola.Board
     public class GameBoard : MonoBehaviour
     {
         #region Singleton
-        //Singleton instace
         private static GameBoard instance;
-        public static GameBoard Instance { get { return instance; } }
+        public static GameBoard Instance => instance;
+
         #endregion
 
-        #region Delegates     
-        //Game Loop Delegates
-        public delegate void OnGameStart();
-        public OnGameStart onGameStart;
-        public delegate void OnAfterGameStart();
-        public OnAfterGameStart onAfterGameStart;
-        public delegate void OnGameRestart();
-        public OnGameRestart onGameRestart;
-        public delegate void OnAfterGameRestart();
-        public OnAfterGameRestart onAfterGameRestart;
-        public delegate void OnGameOver();
-        public OnGameOver onGameOver;
-        public delegate void OnAfterGameOver();
-        public OnAfterGameOver onAfterGameOver;
-
-        //Item Pickup Delegates
-        public delegate void OnGhostEaten();
-        public OnGhostEaten onGhostEaten;
-        public delegate void OnAfterGhostEaten();
-        public OnAfterGhostEaten onAfterGhostEaten;
-        public delegate void OnBonusItemEaten(BonusItem fruitEaten);
-        public OnBonusItemEaten onBonusItemEaten;
-        public delegate void OnSuperPacpointEaten();
-        public OnSuperPacpointEaten onSuperPacpointEaten;
-
-        //Important Delegates
-        public delegate void OnLevelWin();
-        public OnLevelWin onLevelWin;
-        public delegate void OnPacmanDied();
-        public OnPacmanDied onPacmanDied;
-
-        //Others
-        public delegate void OnGhostReachedHouse();
-        public OnGhostReachedHouse onGhostReachedHouse;
+        #region Delegates
+        public event Action OnGameStart;
+        public event Action OnAfterGameStart;
+        public event Action OnGameRestart;
+        public event Action OnAfterGameRestart;
+        public event Action OnGhostEaten;
+        public event Action OnAfterGhostEaten;
+        public event Action<BonusItem> OnBonusItemEaten;
+        public event Action OnSuperPacpointEaten;
+        public event Action OnLevelWin;
+        public event Action OnPacmanDied;
+        public event Action OnGhostReachedHouse;
         #endregion
 
         #region Variables
-        private PacmanController pacman; // Player reference
-        private int totalPacpoints; // the total pacpoints on the board
+        private PacmanController _pacman;
+        private int _totalPacpoints;
 
-        //Game State 
         public enum GameState { NewGame, InGame, Restart, GameOver }
-        public GameState gameState;
+        [FormerlySerializedAs("gameState")] 
+        public GameState CurrentGameState;
 
-        //Board bounds and Node References to match each position of the board
-        private static int boardWidth = 28;
-        private static int boardHeight = 36;
-        public Node[,] board = new Node[boardWidth, boardHeight];
+        private static int _boardWidth = 28;
+        private static int _boardHeight = 36;
+        private readonly Node[,] _board = new Node[_boardWidth, _boardHeight];
 
-        //Aux Bools
-        private bool processWinLevel; //Flag to go to the next level
-        private bool multiplayer; //Flag to trigger multiplayer
-        private bool showBonusItem1; //Show first bonus item
-        private bool showBonusItem2; //Show second bonus item
+        private bool _processWinLevel;
+        private bool _multiplayer;
+        private bool _showBonusItem1;
+        private bool _showBonusItem2;
 
-        //Player Variables - Used to switch between players
         public enum Players { PlayerOne = 0, PlayerTwo = 1 }
-        public Players currentPlayer; //Who is playing the level
-        private PlayerStats playerOne; // Player One Stats (Current Level, Lives and etc)
-        private PlayerStats playerTwo; // Player Two Stats (Current Level, Lives and etc)
-        //Used to save the board state for each player when on Multiplayer mode
-        private bool[] playerOneBoardState;
-        private bool[] playerTwoBoardState;
+        [FormerlySerializedAs("currentPlayer")] 
+        public Players CurrentPlayer;
+        private PlayerStats _playerOne;
+        private PlayerStats _playerTwo;
+        
+        private bool[] _playerOneBoardState;
+        private bool[] _playerTwoBoardState;
+        
+        public LevelDifficulty CurrentLevelDifficulty { get; private set; }
 
-        //The current level difficulty
-        [HideInInspector]
-        public LevelDifficulty currentLevelDifficulty;
-        //The other levels - Key (The Level), Value (Variables)
-        private Dictionary<int, LevelDifficulty> levelDifficulties = new Dictionary<int, LevelDifficulty>();
-
-        //Audio clip references
+        private readonly Dictionary<int, LevelDifficulty> _levelDifficulties = new Dictionary<int, LevelDifficulty>();
+        
         [Header("Audio Settings")]
-        private AudioSource audioS;
-        [SerializeField]
-        private AudioClip backgroundSound = null;
-        [SerializeField]
-        private AudioClip ghostsFrightnedSound = null;
-        [SerializeField]
-        private AudioClip ghostsRetreatSound = null;
-        [SerializeField]
-        private AudioClip ghostEatenSound = null;
-        [SerializeField]
-        private AudioClip bonusItemEaten = null;
-        [SerializeField]
-        private AudioClip winLevelClip = null;
+        private AudioSource _audioSource;
+        [FormerlySerializedAs("backgroundSound")] [SerializeField]
+        private AudioClip _backgroundSound = null;
+        [FormerlySerializedAs("ghostsFrightnedSound")] [SerializeField]
+        private AudioClip _ghostsFrightnedSound = null;
+        [FormerlySerializedAs("ghostsRetreatSound")] [SerializeField]
+        private AudioClip _ghostsRetreatSound = null;
+        [FormerlySerializedAs("ghostEatenSound")] [SerializeField]
+        private AudioClip _ghostEatenSound = null;
+        [FormerlySerializedAs("bonusItemEaten")] [SerializeField]
+        private AudioClip _bonusItemEaten = null;
+        [FormerlySerializedAs("winLevelClip")] [SerializeField]
+        private AudioClip _winLevelClip = null;
 
-        //The available bonus Items
+        [FormerlySerializedAs("bonusItems")]
         [Header("Bonus Items")]
         [SerializeField]
-        private GameObject[] bonusItems = new GameObject[8];
+        private GameObject[] _bonusItems = new GameObject[8];
 
-        //UI reference
+        [FormerlySerializedAs("gameUI")]
         [Header("UI")]
         [SerializeField]
-        private GameUI gameUI = null;
+        private GameUI _gameUI = null;
         #endregion
 
         #region UNITY FUNCTIONS
@@ -123,8 +98,7 @@ namespace Buriola.Board
         {
             if (instance != null && instance != this)
                 Destroy(gameObject);
-
-            //Singleton assigned
+            
             instance = this;
         }
 
@@ -136,9 +110,9 @@ namespace Buriola.Board
 
         private void Update()
         {
-            if (WinLevel(currentPlayer) && !processWinLevel)
+            if (WinLevel(CurrentPlayer) && !_processWinLevel)
             {
-                processWinLevel = true;
+                _processWinLevel = true;
                 StartCoroutine(Win());
             }
             else
@@ -154,76 +128,59 @@ namespace Buriola.Board
 
         #endregion
 
-        /// <summary>
-        /// Method to initiate the board
-        /// Called on Start
-        /// </summary>
         private void Init()
         {
-            showBonusItem1 = false;
-            showBonusItem2 = false;
+            _showBonusItem1 = false;
+            _showBonusItem2 = false;
 
-            //Get references
-            pacman = FindObjectOfType<PacmanController>();
-            audioS = GetComponent<AudioSource>();
+            _pacman = FindObjectOfType<PacmanController>();
+            _audioSource = GetComponent<AudioSource>();
 
-            gameState = GameState.NewGame;
-            currentPlayer = Players.PlayerOne;
+            CurrentGameState = GameState.NewGame;
+            CurrentPlayer = Players.PlayerOne;
 
-            //Init all data
             FindAllPacpoints();
             FindAllNodes();
             LoadLevelsData();
-            //Subscribe to events
             SubscribeToDelegates();
 
-            //Set multiplayer mode
             if (GameController.Instance != null)
-                multiplayer = !GameController.isOnePlayerGame;
+                _multiplayer = !GameController.IsOnePlayerGame;
 
-            //Init player stats
-            if (multiplayer)
+            if (_multiplayer)
             {
-                playerOne = new PlayerStats(1, 3, 0);
-                playerTwo = new PlayerStats(1, 3, 0);
+                _playerOne = new PlayerStats(1, 3, 0);
+                _playerTwo = new PlayerStats(1, 3, 0);
             }
             else
-                playerOne = new PlayerStats(1, 3, 0);
+                _playerOne = new PlayerStats(1, 3, 0);
 
-            //Show the current player
-            gameUI.ShowPlayerText(currentPlayer, 1.5f);
+            _gameUI.ShowPlayerText(CurrentPlayer, 1.5f);
         }
 
         #region GAME LOOP
-        /// <summary>
-        /// Triggers the New Game Coroutine
-        /// </summary>
+        
         private void StartNewGame()
         {
             StartCoroutine(NewGame());
         }
-        /// <summary>
-        /// Starts a new game
-        /// </summary>
-        /// <returns></returns>
+        
         private IEnumerator NewGame()
         {
             yield return new WaitForSeconds(2.25f);
             //Sets bonus items UI
-            gameUI.SetFruitImage(GetPlayerStats(currentPlayer).CurrentLevel);
+            _gameUI.SetFruitImage(GetPlayerStats(CurrentPlayer).CurrentLevel);
 
             //Set level difficulty
-            ChangeLevelDifficulty(GetPlayerStats(currentPlayer));
+            ChangeLevelDifficulty(GetPlayerStats(CurrentPlayer));
 
-            //Call event
-            if (onGameStart != null)
-                onGameStart.Invoke();
+            OnGameStart?.Invoke();
 
             //Show ready text
-            gameUI.ShowReadyText(1.25f);
+            _gameUI.ShowReadyText(1.25f);
 
             //If it is a multiplayer game, we save the board state for each player
-            if (multiplayer)
+            if (_multiplayer)
             {
                 SaveBoardState(Players.PlayerOne);
                 SaveBoardState(Players.PlayerTwo);
@@ -231,277 +188,191 @@ namespace Buriola.Board
 
             yield return new WaitForSeconds(2f);
 
-            //Call last start event
-            if (onAfterGameStart != null)
-                onAfterGameStart.Invoke();
+            OnAfterGameStart?.Invoke();
 
             //Set game state
-            gameState = GameState.InGame;
+            CurrentGameState = GameState.InGame;
 
             //Play normal background sound
-            PlayAudioClip(backgroundSound);
+            PlayAudioClip(_backgroundSound);
         }
 
-        /// <summary>
-        /// Triggers the Restart Coroutine and checks for Game Over
-        /// </summary>
         public void StartRestart()
         {
-            //Update game state
-            gameState = GameState.Restart;
+            CurrentGameState = GameState.Restart;
 
-            //Current player loses a life
-            GetPlayerStats(currentPlayer).LoseLife();
-            SaveBoardState(currentPlayer); // saves his board
+            GetPlayerStats(CurrentPlayer).LoseLife();
+            SaveBoardState(CurrentPlayer);
 
-            //Update UI lives
-            gameUI.UpdatePlayerLives(GetPlayerStats(currentPlayer).GetLives());
+            _gameUI.UpdatePlayerLives(GetPlayerStats(CurrentPlayer).GetLives());
 
-            //reset this
-            showBonusItem1 = false;
-            showBonusItem2 = false;
+            _showBonusItem1 = false;
+            _showBonusItem2 = false;
 
-            //Check if the current player has zero lives
-            if (GetPlayerStats(currentPlayer).GameOver())
+            if (GetPlayerStats(CurrentPlayer).GameOver())
             {
-                //Then we trigger a Game Over for this player
-                gameState = GameState.GameOver;
+                CurrentGameState = GameState.GameOver;
                 StartGameOver();
             }
             else
             {
-                //If it is a multiplayer game
-                if (multiplayer)
+                if (_multiplayer)
                 {
-                    //Change the current player
                     SwapCurrentPlayer();
 
-                    //Get difficulty for the new player
-                    ChangeLevelDifficulty(GetPlayerStats(currentPlayer));
-                    LoadBoardState(currentPlayer); //Load his board state
+                    ChangeLevelDifficulty(GetPlayerStats(CurrentPlayer));
+                    LoadBoardState(CurrentPlayer);
 
-                    //Update UI current player
-                    gameUI.SwapPlayers(currentPlayer);
-                    //Then restart
+                    _gameUI.SwapPlayers(CurrentPlayer);
                 }
 
-                //If it isn't a multiplayer game
-                //Just reset variables and trigger Restart
-                ChangeLevelDifficulty(GetPlayerStats(currentPlayer));
+                ChangeLevelDifficulty(GetPlayerStats(CurrentPlayer));
                 StartCoroutine(Restart());
             }
         }
-        /// <summary>
-        /// Restarts the game
-        /// </summary>
-        /// <returns></returns>
+        
         private IEnumerator Restart()
         {
-            //Update UI / Show who the current player is and show ready text
-            gameUI.SetFruitImage(GetPlayerStats(currentPlayer).CurrentLevel);
-            gameUI.ShowReadyText(1.25f);
-            gameUI.ShowPlayerText(currentPlayer, 1.25f);
+            _gameUI.SetFruitImage(GetPlayerStats(CurrentPlayer).CurrentLevel);
+            _gameUI.ShowReadyText(1.25f);
+            _gameUI.ShowPlayerText(CurrentPlayer, 1.25f);
 
-            //Call board event
-            if (onGameRestart != null)
-                onGameRestart.Invoke();
+            OnGameRestart?.Invoke();
 
             yield return new WaitForSeconds(1.25f);
 
-            //Call board event
-            if (onAfterGameRestart != null)
-                onAfterGameRestart.Invoke();
+            OnAfterGameRestart?.Invoke();
 
-            //Update game state
-            gameState = GameState.InGame;
-            //Play music
-            PlayAudioClip(backgroundSound);
+            CurrentGameState = GameState.InGame;
+            PlayAudioClip(_backgroundSound);
         }
 
-        /// <summary>
-        /// Triggers the Game Over couroutine
-        /// </summary>
         private void StartGameOver()
         {
-            gameState = GameState.GameOver;
+            CurrentGameState = GameState.GameOver;
             StartCoroutine(GameOver());
         }
-        /// <summary>
-        /// Handles a Game Over state for the current player
-        /// </summary>
-        /// <returns></returns>
+        
         private IEnumerator GameOver()
         {
-            //Show Game over text
-            gameUI.ShowGameOverText(2f);
+            _gameUI.ShowGameOverText(2f);
             yield return new WaitForSeconds(3f);
 
-            //If its a multiplayer game
-            if (multiplayer)
+            if (_multiplayer)
             {
-                //Check if it is Game Over for the other player as well
-                Players otherPlayer = currentPlayer == Players.PlayerOne ? Players.PlayerTwo : Players.PlayerOne;
+                Players otherPlayer = CurrentPlayer == Players.PlayerOne ? Players.PlayerTwo : Players.PlayerOne;
                 if (GetPlayerStats(otherPlayer).GameOver())
                 {
-                    //If it is
                     if (GameController.Instance != null)
                     {
-                        //Save high score
-                        GameController.Instance.SaveHighScore(GetPlayerStats(currentPlayer).Score);
+                        GameController.Instance.SaveHighScore(GetPlayerStats(CurrentPlayer).Score);
                         GameController.Instance.SaveHighScore(GetPlayerStats(otherPlayer).Score);
 
                         yield return new WaitForEndOfFrame();
 
-                        //Go back to the Menu Scene
-                        GameController.isOnePlayerGame = true;
+                        GameController.IsOnePlayerGame = true;
                         GameController.Instance.RequestSceneChange(1);
                     }
                 }
-                else // if it isnt, there is still a player with lives
+                else
                 {
-                    //Save the high score for the player who lost
-                    GameController.Instance.SaveHighScore(GetPlayerStats(currentPlayer).Score);
+                    GameController.Instance.SaveHighScore(GetPlayerStats(CurrentPlayer).Score);
 
-                    // Then we trigger a restart
-                    gameState = GameState.Restart;
-
-                    // Swap and setup UI
+                    CurrentGameState = GameState.Restart;
+                    
                     SwapCurrentPlayer();
-                    gameUI.SetupUI();
-                    gameUI.SwapPlayers(currentPlayer);
+                    _gameUI.SetupUI();
+                    _gameUI.SwapPlayers(CurrentPlayer);
 
-                    //Load his board state
-                    LoadBoardState(currentPlayer);
-                    StartCoroutine(Restart()); // Restart
-                    yield break;
+                    LoadBoardState(CurrentPlayer);
+                    StartCoroutine(Restart());
                 }
             }
-            else // if it is not a multiplayer game
+            else
             {
                 if (GameController.Instance != null)
                 {
-                    //Save high score
-                    GameController.Instance.SaveHighScore(GetPlayerStats(currentPlayer).Score);
+                    GameController.Instance.SaveHighScore(GetPlayerStats(CurrentPlayer).Score);
 
                     yield return new WaitForEndOfFrame();
 
-                    //Go back to Main Menu
-                    GameController.isOnePlayerGame = true;
+                    GameController.IsOnePlayerGame = true;
                     GameController.Instance.RequestSceneChange(1);
                 }
             }
         }
 
-        /// <summary>
-        /// Checks to see if the current player has beat the level
-        /// Called on Update
-        /// </summary>
-        /// <param name="currentPlayer">Who is playing</param>
-        /// <returns>True- won level, False - not won</returns>
-        private bool WinLevel(Players currentPlayer)
+        private bool WinLevel(Players player)
         {
-            //If he ate all the pacpoints of the level
-            return GetPlayerStats(currentPlayer).PacpointsConsumed >= totalPacpoints;
+            return GetPlayerStats(player).PacpointsConsumed >= _totalPacpoints;
         }
-        /// <summary>
-        /// Triggers a win level state and prepare for next level
-        /// </summary>
-        /// <returns></returns>
+        
         private IEnumerator Win()
         {
-            //Stop all music
-            audioS.Stop();
+            _audioSource.Stop();
 
-            //Dramatic pause for a 1s
             Time.timeScale = 0;
             yield return new WaitForSecondsRealtime(1f);
             Time.timeScale = 1;
 
-            //Call event
-            if (onLevelWin != null)
-                onLevelWin.Invoke();
+            OnLevelWin?.Invoke();
 
             yield return new WaitForSeconds(1f);
 
-            //Reset variables
-            showBonusItem1 = false;
-            showBonusItem2 = false;
+            _showBonusItem1 = false;
+            _showBonusItem2 = false;
 
-            //Increments the current player level and resets his pacpoints
-            GetPlayerStats(currentPlayer).CurrentLevel++;
-            GetPlayerStats(currentPlayer).BonusItemShown = false;
-            GetPlayerStats(currentPlayer).PacpointsConsumed = 0;
+            GetPlayerStats(CurrentPlayer).CurrentLevel++;
+            GetPlayerStats(CurrentPlayer).BonusItemShown = false;
+            GetPlayerStats(CurrentPlayer).PacpointsConsumed = 0;
 
-            //Adjust level difficulty
-            ChangeLevelDifficulty(GetPlayerStats(currentPlayer));
+            ChangeLevelDifficulty(GetPlayerStats(CurrentPlayer));
 
-            //Play win music
-            audioS.PlayOneShot(winLevelClip);
-            //Show current Level UI
-            gameUI.ShowLevelText(GetPlayerStats(currentPlayer).CurrentLevel, 5f);
+            _audioSource.PlayOneShot(_winLevelClip);
+            _gameUI.ShowLevelText(GetPlayerStats(CurrentPlayer).CurrentLevel, 5f);
 
             yield return new WaitForSeconds(5f);
 
-            //Activates all pacpoints
             Transform pacpointParent = transform.GetChild(1);
             for (int i = 0; i < pacpointParent.childCount; i++)
             {
                 pacpointParent.GetChild(i).gameObject.SetActive(true);
             }
 
-            //Activates all super pacpoints
             Transform superPacpointParent = transform.GetChild(2);
             for (int i = 0; i < superPacpointParent.childCount; i++)
             {
                 superPacpointParent.GetChild(i).gameObject.SetActive(true);
             }
 
-            //Save the board state
-            SaveBoardState(currentPlayer);
+            SaveBoardState(CurrentPlayer);
 
-            //Trigger restart
-            gameState = GameState.Restart;
+            CurrentGameState = GameState.Restart;
             StartCoroutine(Restart());
 
-            //Reset flag
-            processWinLevel = false;
+            _processWinLevel = false;
         }
 
-        /// <summary>
-        /// Swaps the current player
-        /// </summary>
         private void SwapCurrentPlayer()
         {
-            currentPlayer = (currentPlayer == Players.PlayerOne) ? Players.PlayerTwo : Players.PlayerOne;
-            //Update UI
-            gameUI.UpdatePlayerLives(GetPlayerStats(currentPlayer).GetLives());
+            CurrentPlayer = (CurrentPlayer == Players.PlayerOne) ? Players.PlayerTwo : Players.PlayerOne;
+           
+            _gameUI.UpdatePlayerLives(GetPlayerStats(CurrentPlayer).GetLives());
         }
 
-        /// <summary>
-        /// Updates the score for the current player
-        /// </summary>
-        /// <param name="value">The value to be added</param>
-        /// <param name="isGhost">If it is a ghost</param>
-        /// <param name="isBonusItem">If it is a bonus item</param>
         public void UpdateScore(int value, bool isGhost = false, bool isBonusItem = false)
         {
-            //If none of these options, increment the numbar of pacpoints eaten
             if (!isGhost && !isBonusItem)
-                GetPlayerStats(currentPlayer).PacpointsConsumed++;
+                GetPlayerStats(CurrentPlayer).PacpointsConsumed++;
 
-            //Add score
-            GetPlayerStats(currentPlayer).Score += value;
+            GetPlayerStats(CurrentPlayer).Score += value;
 
-            //Update UI score text for the current player
-            gameUI.UpdatePlayerScore(currentPlayer, GetPlayerStats(currentPlayer).Score);
+            _gameUI.UpdatePlayerScore(CurrentPlayer, GetPlayerStats(CurrentPlayer).Score);
         }
 
         #endregion
 
         #region Board Data & Calculations
-        /// <summary>
-        /// This method find all Nodes in the scene and populates the board matrix with the positions
-        /// </summary>
         private void FindAllNodes()
         {
             Node[] objects = FindObjectsOfType<Node>();
@@ -513,89 +384,76 @@ namespace Buriola.Board
                 float x_index = Mathf.Abs(pos.x);
                 float y_index = Mathf.Abs(pos.y);
 
-                board[(int)x_index, (int)y_index] = n;
+                _board[(int)x_index, (int)y_index] = n;
             }
         }
 
-        /// <summary>
-        /// Counts how many pacpoints exist in the scene and add 4 to include the superpacpoints
-        /// </summary>
         private void FindAllPacpoints()
         {
             Transform t = transform.GetChild(1);
-            totalPacpoints = t.childCount + 4; //Include Superpacpoints
+            _totalPacpoints = t.childCount + 4;
         }
 
-        /// <summary>
-        /// Saves the board state for the current player
-        /// </summary>
-        /// <param name="currentPlayer">The current player to save</param>
-        private void SaveBoardState(Players currentPlayer)
+        private void SaveBoardState(Players player)
         {
             Transform pacpointsParent = transform.GetChild(1);
             Transform superPacpointsParent = transform.GetChild(2);
 
-            //Populate the bool arrays with Pacpoint and Superpacpoint active State in scene
-            if (currentPlayer == Players.PlayerOne)
+            if (player == Players.PlayerOne)
             {
                 int lastIndex = 0;
-                playerOneBoardState = new bool[pacpointsParent.childCount + superPacpointsParent.childCount];
+                _playerOneBoardState = new bool[pacpointsParent.childCount + superPacpointsParent.childCount];
                 for (int i = 0; i < pacpointsParent.childCount; i++)
                 {
-                    playerOneBoardState[i] = pacpointsParent.GetChild(i).gameObject.activeSelf;
+                    _playerOneBoardState[i] = pacpointsParent.GetChild(i).gameObject.activeSelf;
                     lastIndex = i;
                 }
 
                 for (int i = 0; i < superPacpointsParent.childCount; i++)
                 {
-                    playerOneBoardState[lastIndex + i + 1] = superPacpointsParent.GetChild(i).gameObject.activeSelf;
+                    _playerOneBoardState[lastIndex + i + 1] = superPacpointsParent.GetChild(i).gameObject.activeSelf;
                 }
             }
             else
             {
                 int lastIndex = 0;
-                playerTwoBoardState = new bool[pacpointsParent.childCount + superPacpointsParent.childCount];
+                _playerTwoBoardState = new bool[pacpointsParent.childCount + superPacpointsParent.childCount];
                 for (int i = 0; i < pacpointsParent.childCount; i++)
                 {
-                    playerTwoBoardState[i] = pacpointsParent.GetChild(i).gameObject.activeSelf;
+                    _playerTwoBoardState[i] = pacpointsParent.GetChild(i).gameObject.activeSelf;
                     lastIndex = i;
                 }
 
                 for (int i = 0; i < superPacpointsParent.childCount; i++)
                 {
-                    playerTwoBoardState[lastIndex + i + 1] = superPacpointsParent.GetChild(i).gameObject.activeSelf;
+                    _playerTwoBoardState[lastIndex + i + 1] = superPacpointsParent.GetChild(i).gameObject.activeSelf;
                 }
             }
         }
 
-        /// <summary>
-        /// Loads the board state for the current player
-        /// </summary>
-        /// <param name="currentPlayer">The current player to load</param>
-        private void LoadBoardState(Players currentPlayer)
+        private void LoadBoardState(Players player)
         {
-            if (playerOneBoardState == null && playerTwoBoardState == null)
+            if (_playerOneBoardState == null && _playerTwoBoardState == null)
                 return;
 
-            if (playerOneBoardState.Length == 0 || playerTwoBoardState.Length == 0)
+            if (_playerOneBoardState != null && (_playerOneBoardState.Length == 0 || _playerTwoBoardState.Length == 0))
                 return;
 
             Transform pacpointsParent = transform.GetChild(1);
             Transform superPacpointsParent = transform.GetChild(2);
 
-            //Checks the bool array and set the Active state for each Pacpoint and super pacpoint in the scene
-            if (currentPlayer == Players.PlayerOne)
+            if (player == Players.PlayerOne)
             {
                 int lastIndex = 0;
                 for (int i = 0; i < pacpointsParent.childCount; i++)
                 {
-                    pacpointsParent.GetChild(i).gameObject.SetActive(playerOneBoardState[i]);
+                    pacpointsParent.GetChild(i).gameObject.SetActive(_playerOneBoardState != null && _playerOneBoardState[i]);
                     lastIndex = i;
                 }
 
                 for (int i = 0; i < superPacpointsParent.childCount; i++)
                 {
-                    superPacpointsParent.GetChild(i).gameObject.SetActive(playerOneBoardState[lastIndex + i + 1]);
+                    superPacpointsParent.GetChild(i).gameObject.SetActive(_playerOneBoardState != null && _playerOneBoardState[lastIndex + i + 1]);
                 }
             }
             else
@@ -603,20 +461,17 @@ namespace Buriola.Board
                 int lastIndex = 0;
                 for (int i = 0; i < pacpointsParent.childCount; i++)
                 {
-                    pacpointsParent.GetChild(i).gameObject.SetActive(playerTwoBoardState[i]);
+                    pacpointsParent.GetChild(i).gameObject.SetActive(_playerTwoBoardState[i]);
                     lastIndex = i;
                 }
 
                 for (int i = 0; i < superPacpointsParent.childCount; i++)
                 {
-                    superPacpointsParent.GetChild(i).gameObject.SetActive(playerTwoBoardState[lastIndex + i + 1]);
+                    superPacpointsParent.GetChild(i).gameObject.SetActive(_playerTwoBoardState[lastIndex + i + 1]);
                 }
             }
         }
 
-        /// <summary>
-        /// Loads from the Resources folder all the Level Difficulties scriptables
-        /// </summary>
         private void LoadLevelsData()
         {
             LevelDifficulty[] levelDifficulties = Resources.LoadAll<LevelDifficulty>("Data");
@@ -624,43 +479,27 @@ namespace Buriola.Board
             {
                 for (int i = 0; i < levelDifficulties.Length; i++)
                 {
-                    //Add to the dictionary
-                    this.levelDifficulties.Add(i + 1, levelDifficulties[i]);
+                    this._levelDifficulties.Add(i + 1, levelDifficulties[i]);
                 }
             }
         }
 
-        /// <summary>
-        /// Change the current level difficulty based on the current player level.
-        /// </summary>
-        /// <param name="playerStats">The player stats</param>
         private void ChangeLevelDifficulty(PlayerStats playerStats)
         {
-            //Set this to be the last in case the player passes 8 levels
-            if (playerStats.CurrentLevel > levelDifficulties.Count)
-                currentLevelDifficulty = levelDifficulties.Values.Last();
-            else
-                currentLevelDifficulty = levelDifficulties[playerStats.CurrentLevel];
+            CurrentLevelDifficulty = playerStats.CurrentLevel > _levelDifficulties.Count ? _levelDifficulties.Values.Last() : _levelDifficulties[playerStats.CurrentLevel];
         }
 
-        /// <summary>
-        /// Gets the nearest Portal Node based on a given position
-        /// </summary>
-        /// <param name="pos">The position you want to check</param>
-        /// <returns>The opposite portal node</returns>
         public PortalNode GetPortalNodeAtPosition(Vector2 pos)
         {
-            float x_index = Mathf.Abs(pos.x);
-            float y_index = Mathf.Abs(pos.y);
+            float xIndex = Mathf.Abs(pos.x);
+            float yIndex = Mathf.Abs(pos.y);
 
-            //Get from the board array
-            PortalNode node = board[(int)(x_index), (int)y_index] as PortalNode;
+            PortalNode node = _board[(int)(xIndex), (int)yIndex] as PortalNode;
 
             if (node != null)
             {
-                if (node.portalReceiver != null)
-                    //Returns the other portal
-                    return node.portalReceiver;
+                if (node.PortalReceiver != null)
+                    return node.PortalReceiver;
             }
 
             return null;
@@ -669,171 +508,151 @@ namespace Buriola.Board
         #endregion
 
         #region Board Events
-        /// <summary>
-        /// Triggers the ghost eaten event coroutine
-        /// </summary>
-        /// <param name="ghostEaten">The ghost that was eaten</param>
         public void StartGhostEatenEvent(GhostAI ghostEaten)
         {
             StartCoroutine(GhostEaten(ghostEaten));
         }
-        /// <summary>
-        /// Handles ghost eaten event
-        /// </summary>
-        /// <param name="ghostEaten"> the ghost eaten</param>
-        /// <returns></returns>
+        
         private IEnumerator GhostEaten(GhostAI ghostEaten)
         {
-            //Call board event
-            if (onGhostEaten != null)
-                onGhostEaten.Invoke();
+            OnGhostEaten?.Invoke();
 
-            //Stop all music and disables pacman and the ghost sprite
-            audioS.Stop();
-            ghostEaten.ghostSprite.enabled = false;
-            pacman.pacmanSprite.enabled = false;
+            _audioSource.Stop();
+            ghostEaten.GhostSprite.enabled = false;
+            _pacman.PacmanSprite.enabled = false;
 
-            //Show the score
-            gameUI.SetGhostEatenScoreText(ghostEaten.transform.position, ghostEaten.previousScore);
+            _gameUI.SetGhostEatenScoreText(ghostEaten.transform.position, ghostEaten.PreviousScore);
 
-            //Play sound eaten
-            audioS.PlayOneShot(ghostEatenSound);
+            _audioSource.PlayOneShot(_ghostEatenSound);
 
             yield return new WaitForSeconds(1f);
 
-            //Enables sprites again
-            pacman.pacmanSprite.enabled = true;
-            ghostEaten.ghostSprite.enabled = true;
+            _pacman.PacmanSprite.enabled = true;
+            ghostEaten.GhostSprite.enabled = true;
 
-            //Call board event
-            if (onAfterGhostEaten != null)
-                onAfterGhostEaten.Invoke();
+            OnAfterGhostEaten?.Invoke();
 
-            //Play retreat sound 
-            PlayAudioClip(ghostsRetreatSound);
+            PlayAudioClip(_ghostsRetreatSound);
         }
 
-        /// <summary>
-        /// Trigger bonus item eaten coroutine
-        /// </summary>
-        /// <param name="item">The bonus item eaten</param>
         private void StartBonusItemEaten(BonusItem item)
         {
             StartCoroutine(BonusItemEaten(item));
         }
-        /// <summary>
-        /// Handles the bonus item eaten event
-        /// </summary>
-        /// <param name="item">the bonus item eaten</param>
-        /// <returns></returns>
+        
         private IEnumerator BonusItemEaten(BonusItem item)
         {
-            //Stops all music
-            audioS.Stop();
-            //Show UI score
-            gameUI.SetGhostEatenScoreText(item.transform.localPosition, item.ScoreValue);
+            _audioSource.Stop();
+            _gameUI.SetGhostEatenScoreText(item.transform.localPosition, item.ScoreValue);
 
-            //Play item sound
-            audioS.PlayOneShot(bonusItemEaten);
+            _audioSource.PlayOneShot(_bonusItemEaten);
 
             yield return new WaitForEndOfFrame();
 
-            //play normal sound again
-            PlayAudioClip(backgroundSound);
+            PlayAudioClip(_backgroundSound);
         }
 
-        /// <summary>
-        /// Checks if should show a bonus item based on how many pacpoints Pacman ate
-        /// Called on Update
-        /// </summary>
         private void ShowBonusItem()
         {
-            //If we already showed the bonus item twice, no point in showing again for this player
-            if (GetPlayerStats(currentPlayer).BonusItemShown)
+            if (GetPlayerStats(CurrentPlayer).BonusItemShown)
                 return;
 
-            //Show first item after 70 pacpoints consumed
-            if (!showBonusItem1 && GetPlayerStats(currentPlayer).PacpointsConsumed >= 70)
+            if (!_showBonusItem1 && GetPlayerStats(CurrentPlayer).PacpointsConsumed >= 70)
             {
-                for (int i = 0; i < bonusItems.Length; i++)
+                foreach (GameObject t in _bonusItems)
                 {
-                    if (bonusItems[i].name == currentLevelDifficulty.bonusItem.name)
+                    if (t.name == CurrentLevelDifficulty.BonusItem.name)
                     {
-                        bonusItems[i].SetActive(true);
-                        showBonusItem1 = true;
+                        t.SetActive(true);
+                        _showBonusItem1 = true;
                         break;
                     }
                 }
             }
 
-            //Show second item after 170 pacpoint consumed
-            if (!showBonusItem2 && GetPlayerStats(currentPlayer).PacpointsConsumed >= 170)
+            if (!_showBonusItem2 && GetPlayerStats(CurrentPlayer).PacpointsConsumed >= 170)
             {
-                for (int i = 0; i < bonusItems.Length; i++)
+                foreach (GameObject t in _bonusItems)
                 {
-                    if (bonusItems[i].name == currentLevelDifficulty.bonusItem.name)
+                    if (t.name == CurrentLevelDifficulty.BonusItem.name)
                     {
-                        bonusItems[i].SetActive(true);
-                        showBonusItem2 = true;
-                        //Set this flag to not show items again on this level
-                        GetPlayerStats(currentPlayer).BonusItemShown = true;
+                        t.SetActive(true);
+                        _showBonusItem2 = true;
+                        GetPlayerStats(CurrentPlayer).BonusItemShown = true;
                         break;
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Subscribe to board delegates
-        /// Called on Init
-        /// </summary>
         private void SubscribeToDelegates()
         {
-            onPacmanDied += StopSounds;
-            onSuperPacpointEaten += delegate { PlayAudioClip(ghostsFrightnedSound); };
-            onGhostReachedHouse += delegate { PlayAudioClip(backgroundSound); };
-            onBonusItemEaten += StartBonusItemEaten;
+            OnPacmanDied += StopSounds;
+            OnSuperPacpointEaten += OnSuperPacpointEatenCallback;
+            OnGhostReachedHouse += OnGhostReachedHouseCallback;
+            OnBonusItemEaten += StartBonusItemEaten;
         }
 
-        /// <summary>
-        /// Unsubscribe from board delegates
-        /// Called on OnDisable
-        /// </summary>
         private void UnsubscribeFromDelegates()
         {
-            onPacmanDied -= StopSounds;
-            onSuperPacpointEaten -= delegate { PlayAudioClip(ghostsFrightnedSound); };
-            onGhostReachedHouse -= delegate { PlayAudioClip(backgroundSound); };
-            onBonusItemEaten -= StartBonusItemEaten;
+            OnPacmanDied -= StopSounds;
+            OnSuperPacpointEaten -= OnSuperPacpointEatenCallback;
+            OnGhostReachedHouse -= OnGhostReachedHouseCallback;
+            OnBonusItemEaten -= StartBonusItemEaten;
         }
+
+        private void OnSuperPacpointEatenCallback()
+        {
+            PlayAudioClip(_ghostsFrightnedSound);
+        }
+
+        private void OnGhostReachedHouseCallback()
+        {
+            PlayAudioClip(_backgroundSound);
+        }
+
+        public void InvokeOnPacmanDiedEvent()
+        {
+            OnPacmanDied?.Invoke();
+        }
+        
+        public void InvokeSuperPacpointEvent()
+        {
+            OnSuperPacpointEaten?.Invoke();
+        }
+
+        public void InvokeGhostReachedHouseEvent()
+        {
+            OnGhostReachedHouse?.Invoke();
+        }
+
+        public void InvokeBonusItemEaten(BonusItem item)
+        {
+            OnBonusItemEaten?.Invoke(item);
+        }
+        
         #endregion
 
         #region Audio Related
-        //Play sounds, nothing out of the ordinary here
         private void PlayAudioClip(AudioClip clip)
         {
-            audioS.clip = clip;
-            audioS.loop = true;
-            audioS.Play();
+            _audioSource.clip = clip;
+            _audioSource.loop = true;
+            _audioSource.Play();
         }
 
         private void StopSounds()
         {
-            audioS.Stop();
+            _audioSource.Stop();
         }
 
         #endregion
 
         #region Getters
 
-        /// <summary>
-        /// Gets the player stats
-        /// </summary>
-        /// <param name="player">The player you want to get</param>
-        /// <returns>The player stats</returns>
-        public PlayerStats GetPlayerStats(Players player)
+        private PlayerStats GetPlayerStats(Players player)
         {
-            return player == Players.PlayerOne ? playerOne : playerTwo;
+            return player == Players.PlayerOne ? _playerOne : _playerTwo;
         }
 
         #endregion   

@@ -6,5 +6,8 @@
         void OnAfterGameStart();
         void OnGameBoardRestart();
         void OnAfterGameBoardRestart();
+        void OnGhostEaten();
+        void OnAfterGhostEaten();
+        void OnLevelWin();
     }
 }

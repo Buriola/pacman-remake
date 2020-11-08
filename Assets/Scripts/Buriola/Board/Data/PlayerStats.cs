@@ -3,14 +3,14 @@
     [System.Serializable]
     public class PlayerStats
     {
-        private int pacmanLives; //Lives
+        private int _pacmanLives; //Lives
         public int CurrentLevel { get; set; } //current level
         public bool BonusItemShown { get; set; } //flag to show bonus items
 
         public PlayerStats(int currentLevel, int pacmanLives, int score)
         {
             CurrentLevel = currentLevel;
-            this.pacmanLives = pacmanLives;
+            _pacmanLives = pacmanLives;
             Score = score;
         }
 
@@ -22,9 +22,9 @@
         /// </summary>
         public void LoseLife()
         {
-            pacmanLives--;
-            if (pacmanLives <= 0)
-                pacmanLives = 0;
+            _pacmanLives--;
+            if (_pacmanLives <= 0)
+                _pacmanLives = 0;
         }
 
         /// <summary>
@@ -33,7 +33,7 @@
         /// <returns></returns>
         public bool GameOver()
         {
-            return pacmanLives == 0;
+            return _pacmanLives == 0;
         }
 
         /// <summary>
@@ -42,7 +42,7 @@
         /// <returns></returns>
         public int GetLives()
         {
-            return pacmanLives;
+            return _pacmanLives;
         }
     }
 }

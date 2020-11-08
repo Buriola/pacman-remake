@@ -1,29 +1,19 @@
 ﻿using Buriola.Board;
 using UnityEngine;
 using Buriola.Interfaces;
+using UnityEngine.Serialization;
 
 namespace Buriola.Pickups
 {
-    /// <summary>
-    /// Represents a Pacpoint/Dot/Pellet that Pacman can eat
-    /// </summary>
     public class Pacpoint : MonoBehaviour, IEatable
     {
-        //The default score value for eating this
-        [SerializeField]
-        protected int scoreValue = 10;
+        [FormerlySerializedAs("scoreValue")] [SerializeField]
+        protected int _scoreValue = 10;
+        public int ScoreValue => _scoreValue;
 
-        //A getter
-        public int ScoreValue { get { return scoreValue; } }
-
-        /// <summary>
-        /// Implementation of interface
-        /// </summary>
         public virtual void OnEaten()
         {
-            //Updates the score
-            GameBoard.Instance.UpdateScore(scoreValue);
-            //Deactivate the object
+            GameBoard.Instance.UpdateScore(_scoreValue);
             gameObject.SetActive(false);
         }
     }

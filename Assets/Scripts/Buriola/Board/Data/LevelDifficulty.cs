@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Buriola.Board.Data
 {
@@ -8,24 +9,33 @@ namespace Buriola.Board.Data
     [CreateAssetMenu(menuName = "Level Difficulty", fileName = "New Level Difficulty")]
     public class LevelDifficulty : ScriptableObject
     {
+        [FormerlySerializedAs("ghostsSpeed")] 
         [Header("Ghosts Settings")]
-        public float ghostsSpeed;
-        public float ghostScaredSpeed;
-        public float ghostsEatenSpeed;
+        public float GhostsSpeed;
+        [FormerlySerializedAs("ghostScaredSpeed")]
+        public float GhostScaredSpeed;
+        [FormerlySerializedAs("ghostsEatenSpeed")]
+        public float GhostsEatenSpeed;
+        [FormerlySerializedAs("pinkyReleaseTime")]
         [Space]
-        public float pinkyReleaseTime; //Time that Pinky will be released
-        public float inkyReleaseTime; //Time that Inky will be released
-        public float clydeReleaseTime; // Time that Clyde will be released
-        [Space]
-        public AI.GhostMode[] ghostModes = new AI.GhostMode[4]; //Modes for each level
-        [Space]
-        public float ghostsScareDuration; //Time they will be scared
-        public float ghostsStartBlinkingAt; //Time they will start blinking
+        public float PinkyReleaseTime;
+        [FormerlySerializedAs("inkyReleaseTime")]
+        public float InkyReleaseTime;
+        [FormerlySerializedAs("clydeReleaseTime")]
+        public float ClydeReleaseTime;
 
-        [Header("Pacman Settings")]
-        public float pacmanSpeed; //Pacman speed
+        [FormerlySerializedAs("ghostModes")] [Space]
+        public AI.GhostMode[] GhostModes = new AI.GhostMode[4];
+        [FormerlySerializedAs("ghostsScareDuration")] 
+        [Space]
+        public float GhostsScareDuration;
+        [FormerlySerializedAs("ghostsStartBlinkingAt")]
+        public float GhostsStartBlinkingAt;
+        [FormerlySerializedAs("pacmanSpeed")] [Header("Pacman Settings")]
+        public float PacmanSpeed;
 
+        [FormerlySerializedAs("bonusItem")] 
         [Header("Bonus Items Settings")]
-        public GameObject bonusItem; //The bonus item for this level
+        public GameObject BonusItem;
     }
 }

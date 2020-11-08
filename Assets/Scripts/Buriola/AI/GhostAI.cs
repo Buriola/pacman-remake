@@ -1,8 +1,10 @@
-﻿using Buriola.Board;
+﻿using System;
+using Buriola.Board;
 using Buriola.Board.Data;
 using UnityEngine;
 using Buriola.Player;
 using Buriola.Interfaces;
+using Random = UnityEngine.Random;
 
 namespace Buriola.AI
 {
@@ -13,65 +15,55 @@ namespace Buriola.AI
     public abstract class GhostAI : MonoBehaviour, IEatable, IGameBoardEvents
     {
         #region Variables
-        protected static bool caughtPacman; //Shared variable to let every ghost know if the caught pacman
+        private static bool _caughtPacman;
+        private static readonly int GHOST_SCORE_VALUE = 200; 
 
-        protected bool canMove; //Flag to allow ghosts to move
-        protected bool isInGhostHouse; // Flag to add a delay if this ghost is supposed to be in the ghost house
+        protected bool CanMove;
+        protected bool IsInGhostHouse; 
 
-        protected int ghostScoreValue = 200; // the default score value when the ghost is consumed
-        [HideInInspector]
-        public int previousScore; //aux value to update interface. Stores the last ghost score
+        public int PreviousScore { get; private set; }
 
         //Variables for movement
-        protected float currentMoveSpeed;
-        protected float normalMoveSpeed = 6f;
-        protected float scaredMoveSpeed = 4f;
-        protected float eatenMoveSpeed = 10f;
+        private float _currentMoveSpeed;
+        private float _normalMoveSpeed;
+        private float _scaredMoveSpeed;
+        private float _eatenMoveSpeed;
 
-        protected float scaredDuration = 10f; //How long the ghost is supposed to be frightened
-        protected float startBlinkingAt = 7f; //Will start blinking at this value
-        protected float scaredTimer;
+        private float _scaredDuration;
+        private float _startBlinkingAt;
+        private float _scaredTimer;
 
         [Header("Board Navigation Settings")]
         [SerializeField]
-        protected Node startingNode; //The starting position on the board
+        protected Node StartingNode = null;
         [SerializeField]
-        protected Node homeNode; //Reference to the home node of this ghost, on Scatter mode, he will be headed this way
+        protected Node HomeNode = null;
         [SerializeField]
-        protected Node ghostHouseNode; //Reference to the ghost house node. So he can respawn after being consumed
+        protected Node GhostHouseNode = null;
 
-        protected Node currentNode; //His current board position
-        protected Node targetNode; //The position it is headed
-        protected Node previousNode; // the previous position
+        protected Node CurrentNode;
+        protected Node TargetNode;
+        protected Node PreviousNode;
 
-        //Direction references
-        protected Vector2 direction; 
-        protected Vector2 nextDirection;
+        protected Vector2 Direction;
 
-        //Aux bool to trigger state change
-        protected bool requestStateChange;
+        private bool _requestStateChange;
+        private GhostState _currentGhostState;
+        private GhostMode[] _ghostModes;
+        private int _modeIndex;
+        private float _timer;
 
-        //Ghosts states
-        protected enum GhostState
-        {
-            Chase, Scatter, Flee, Blinking, Eaten
-        }
-        protected GhostState currentGhostState;
-        protected GhostState previousGhostState;
+        public SpriteRenderer GhostSprite { get; private set; }
+        private Animator _anim;
+        protected PacmanController Pacman;
+        protected GameBoard Board;
 
-        /// <summary>
-        /// The current Ghost Mode
-        /// </summary>
-        protected GhostMode[] ghostModes;
-        protected int modeIndex; //Index of this array
-        protected float timer = 0f; //aux timer to change modes
-
-        //Other references
-        [HideInInspector]
-        public SpriteRenderer ghostSprite;
-        protected Animator anim;
-        protected PacmanController pacman; //Need a reference of the player
-        protected GameBoard board;
+        private static readonly int Vertical = Animator.StringToHash("Vertical");
+        private static readonly int Horizontal = Animator.StringToHash("Horizontal");
+        private static readonly int NormalTrigger = Animator.StringToHash("NormalTrigger");
+        private static readonly int ScaredTrigger = Animator.StringToHash("ScaredTrigger");
+        private static readonly int BlinkingTrigger = Animator.StringToHash("BlinkingTrigger");
+        private static readonly int DeadTrigger = Animator.StringToHash("DeadTrigger");
 
         #endregion
 
@@ -92,8 +84,8 @@ namespace Buriola.AI
 
             //Careful with this -> Got me 2h debugging to find this static variable and reset it on level load :(
             //My fault anyways
-            if (caughtPacman && targetNode != null)
-                targetNode = null;
+            if (_caughtPacman && TargetNode != null)
+                TargetNode = null;
         }
 
         protected void OnDisable()
@@ -106,42 +98,42 @@ namespace Buriola.AI
         /// <summary>
         /// This method initialises the ghost variables and set its default starting position
         /// </summary>
-        protected void Init()
+        private void Init()
         {
             //Request a state change
-            requestStateChange = true;
+            _requestStateChange = true;
 
-            currentMoveSpeed = normalMoveSpeed;
-            currentGhostState = GhostState.Scatter;
+            _currentMoveSpeed = _normalMoveSpeed;
+            _currentGhostState = GhostState.Scatter;
 
             //Init this in case the Level Difficulty object is null
-            ghostModes = new GhostMode[] { new GhostMode(7f, 20f), new GhostMode(7f, 20f), new GhostMode(7f, 20f), new GhostMode(7f, 20f) };
+            _ghostModes = new GhostMode[] { new GhostMode(7f, 20f), new GhostMode(7f, 20f), new GhostMode(7f, 20f), new GhostMode(7f, 20f) };
 
             //Assign references
-            anim = GetComponentInChildren<Animator>();
-            pacman = FindObjectOfType<PacmanController>();
-            ghostSprite = GetComponentInChildren<SpriteRenderer>();
-            board = GameBoard.Instance;
+            _anim = GetComponentInChildren<Animator>();
+            Pacman = FindObjectOfType<PacmanController>();
+            GhostSprite = GetComponentInChildren<SpriteRenderer>();
+            Board = GameBoard.Instance;
 
-            if (startingNode != null)
+            if (StartingNode != null)
             {
-                currentNode = startingNode;
+                CurrentNode = StartingNode;
 
                 //Set the starting position
-                transform.position = startingNode.transform.localPosition;
+                transform.position = StartingNode.transform.localPosition;
             }
 
-            ghostSprite.enabled = false;
+            GhostSprite.enabled = false;
         }
 
         /// <summary>
         /// Updates the animator variables
         /// </summary>
-        protected void HandleAnimations()
+        private void HandleAnimations()
         {
             //Passing the current direction
-            anim.SetFloat("Horizontal", direction.x);
-            anim.SetFloat("Vertical", direction.y);
+            _anim.SetFloat(Horizontal, Direction.x);
+            _anim.SetFloat(Vertical, Direction.y);
         }
 
         /// <summary>
@@ -151,62 +143,48 @@ namespace Buriola.AI
         /// </summary>
         protected virtual void SetGhostsSettings()
         {
-            if (board.currentLevelDifficulty != null)
+            if (Board.CurrentLevelDifficulty != null)
             {
                 //Gets the board current level difficulty and updates all variables
-                LevelDifficulty difficulty = board.currentLevelDifficulty;
+                LevelDifficulty difficulty = Board.CurrentLevelDifficulty;
 
-                normalMoveSpeed = difficulty.ghostsSpeed;
-                scaredMoveSpeed = difficulty.ghostScaredSpeed;
-                eatenMoveSpeed = difficulty.ghostsEatenSpeed;
+                _normalMoveSpeed = difficulty.GhostsSpeed;
+                _scaredMoveSpeed = difficulty.GhostScaredSpeed;
+                _eatenMoveSpeed = difficulty.GhostsEatenSpeed;
 
-                scaredDuration = difficulty.ghostsScareDuration;
-                startBlinkingAt = difficulty.ghostsStartBlinkingAt;
-                ghostModes = difficulty.ghostModes;
+                _scaredDuration = difficulty.GhostsScareDuration;
+                _startBlinkingAt = difficulty.GhostsStartBlinkingAt;
+                _ghostModes = difficulty.GhostModes;
             }
         }
 
-        /// <summary>
-        /// Calculates the score that Pacman will earn when eating this ghost.
-        /// It uses the KillStreak property of Pacman to calculate
-        /// </summary>
-        /// <returns>The new score value</returns>
-        public int CalculateScore()
+        private int CalculateScore()
         {
             // Will return 200, 400, 800 or 1600
-            int x = Mathf.RoundToInt((ghostScoreValue * (Mathf.Pow(2, pacman.KillStreak - 1))));
-            previousScore = x; //Save this to update UI
+            int x = Mathf.RoundToInt((GHOST_SCORE_VALUE * (Mathf.Pow(2, Pacman.KillStreak - 1))));
+            PreviousScore = x;
             return x;
         }
 
-        /// <summary>
-        /// Implementation of the IEatable interface. Allow collision with Pacman
-        /// </summary>
         public void OnEaten()
         {
-            //If the ghost isn't on Frightned/Flee State
-            if (currentGhostState == GhostState.Chase || currentGhostState == GhostState.Scatter)
+            if (_currentGhostState == GhostState.Chase || _currentGhostState == GhostState.Scatter)
             {
-                //That means its game over for Pacman
-                caughtPacman = true;
-                pacman.StartDeath();
+                _caughtPacman = true;
+                Pacman.StartDeath();
             }
-            else if (currentGhostState != GhostState.Eaten) //If we are not on Consumed/Eaten state, we are at Flee state
+            else if (_currentGhostState != GhostState.Eaten)
             {
-                //Change our state
-                requestStateChange = true;
+                _requestStateChange = true;
                 ChangeState(GhostState.Eaten);
 
-                //Not allow Pacman to score more than 1600 points when eating this ghost
-                if (pacman.KillStreak > 4)
-                    pacman.KillStreak = 1;
+                if (Pacman.KillStreak > 4)
+                    Pacman.KillStreak = 1;
 
-                //Updates the player score
-                board.UpdateScore(CalculateScore(), true);
-                pacman.KillStreak++; //Increments this to allow Pacman to eat more ghosts and score more
+                Board.UpdateScore(CalculateScore(), true);
+                Pacman.KillStreak++;
 
-                //Trigger the board event
-                board.StartGhostEatenEvent(this);
+                Board.StartGhostEatenEvent(this);
             }
         }
 
@@ -216,37 +194,36 @@ namespace Buriola.AI
         /// Changes the ghost state
         /// </summary>
         /// <param name="toState"> The state you want to go </param>
-        protected void ChangeState(GhostState toState)
+        private void ChangeState(GhostState toState)
         {
             //No point in case this is true
-            if (currentGhostState == toState)
+            if (_currentGhostState == toState)
             {
-                requestStateChange = false;
+                _requestStateChange = false;
                 return;
             }
 
             // Have to set this variable to true every time you want to change state,
             // because we're using animator triggers, we dont want to call the triggers every frame
-            if (requestStateChange)
+            if (_requestStateChange)
             {
-                previousGhostState = currentGhostState; //Save our previous state
-                currentGhostState = toState; //Set our new state
+                _currentGhostState = toState; //Set our new state
 
                 //Handle animations
                 switch (toState)
                 {
                     case GhostState.Chase:
                     case GhostState.Scatter:
-                        anim.SetTrigger("NormalTrigger");
+                        _anim.SetTrigger(NormalTrigger);
                         break;
                     case GhostState.Flee:
-                        anim.SetTrigger("ScaredTrigger");
+                        _anim.SetTrigger(ScaredTrigger);
                         break;
                     case GhostState.Blinking:
-                        anim.SetTrigger("BlinkingTrigger");
+                        _anim.SetTrigger(BlinkingTrigger);
                         break;
                     case GhostState.Eaten:
-                        anim.SetTrigger("DeadTrigger");
+                        _anim.SetTrigger(DeadTrigger);
                         break;
                     default:
                         break;
@@ -254,7 +231,7 @@ namespace Buriola.AI
             }
 
             //Set this to false to avoid unwanted state changes
-            requestStateChange = false;
+            _requestStateChange = false;
         }
 
         /// <summary>
@@ -262,237 +239,189 @@ namespace Buriola.AI
         /// Also, changing our current move speed.
         /// Called on Update
         /// </summary>
-        protected void UpdateGhostsTimers()
+        private void UpdateGhostsTimers()
         {
-            if (currentGhostState == GhostState.Chase || currentGhostState == GhostState.Scatter)
+            if (_currentGhostState == GhostState.Chase || _currentGhostState == GhostState.Scatter)
                 UpdateChaseScatterTimers();
-            else if (currentGhostState == GhostState.Flee || currentGhostState == GhostState.Blinking)
+            else if (_currentGhostState == GhostState.Flee || _currentGhostState == GhostState.Blinking)
                 UpdateScaredTimers();
-            else if (currentGhostState == GhostState.Eaten)
+            else if (_currentGhostState == GhostState.Eaten)
             {
-                if (currentMoveSpeed != eatenMoveSpeed)
-                    currentMoveSpeed = eatenMoveSpeed;
+                _currentMoveSpeed = _eatenMoveSpeed;
             }
         }
 
-        /// <summary>
-        /// Updates the Chase Mode timer
-        /// Called on UpdateGhostsTimers
-        /// </summary>
-        protected void UpdateChaseScatterTimers()
+        private void UpdateChaseScatterTimers()
         {
-            //Set our normal speed in case it isnt
-            if (currentMoveSpeed != normalMoveSpeed)
-                currentMoveSpeed = normalMoveSpeed;
+            _currentMoveSpeed = _normalMoveSpeed;
 
-            //The modeIndex allow us to check the current ghost mode and how long we should increment this
-            timer += Time.deltaTime;
-            if (currentGhostState == GhostState.Scatter && timer > ghostModes[modeIndex].scatterModeTime)
+            _timer += Time.deltaTime;
+            if (_currentGhostState == GhostState.Scatter && _timer > _ghostModes[_modeIndex].scatterModeTime)
             {
-                //Change the state and reset timer
-                requestStateChange = true;
+                _requestStateChange = true;
                 ChangeState(GhostState.Chase);
-                timer = 0;
+                _timer = 0;
             }
-            if (currentGhostState == GhostState.Chase && timer > ghostModes[modeIndex].chaseModeTime)
+            
+            if (_currentGhostState == GhostState.Chase && _timer > _ghostModes[_modeIndex].chaseModeTime)
             {
-                //If we didn't reach the end of the array continue to change mode
-                if (modeIndex != ghostModes.Length - 1)
+                if (_modeIndex != _ghostModes.Length - 1)
                 {
-                    modeIndex++;
-                    requestStateChange = true;
+                    _modeIndex++;
+                    _requestStateChange = true;
                     ChangeState(GhostState.Scatter);
-                    timer = 0;
+                    _timer = 0;
                 }
-                else // otherwise, we are at Chase Mode till the end of the round
-                    timer = 0;
+                else
+                    _timer = 0;
             }
         }
 
-        /// <summary>
-        /// Updates the Frightened/Flee/Scare timer
-        /// Called on UpdateGhostsTimers
-        /// </summary>
-        protected void UpdateScaredTimers()
+        private void UpdateScaredTimers()
         {
-            //Set the scared move speed if it isnt already
-            if (currentMoveSpeed != scaredMoveSpeed)
-                currentMoveSpeed = scaredMoveSpeed;
+            _currentMoveSpeed = _scaredMoveSpeed;
 
             //Checks if we should go to the Blinking state, let the player know we are going to be dangerous again
-            scaredTimer += Time.deltaTime;
-            if (scaredTimer >= startBlinkingAt && currentGhostState != GhostState.Blinking)
+            _scaredTimer += Time.deltaTime;
+            if (_scaredTimer >= _startBlinkingAt && _currentGhostState != GhostState.Blinking)
             {
                 //Change state
-                requestStateChange = true;
+                _requestStateChange = true;
                 ChangeState(GhostState.Blinking);
             } 
-            else if (scaredTimer > scaredDuration) //Timer will still be running even on Blinking State
+            else if (_scaredTimer > _scaredDuration) //Timer will still be running even on Blinking State
             {
                 //Reset Pacman Killstreak
-                pacman.KillStreak = 1;
+                Pacman.KillStreak = 1;
 
                 //Change state
-                requestStateChange = true;
+                _requestStateChange = true;
                 ChangeState(GhostState.Chase);
-                scaredTimer = 0f; //reset
+                _scaredTimer = 0f; //reset
             }
         }
 
-        /// <summary>
-        /// This method triggers the Frightened/Scared/Flee state
-        /// Subscribes to the OnSuperPacpointEaten board event
-        /// </summary>
-        protected void StartFleeState()
+        private void StartFleeState()
         {
-            //If we are consumed and still returning to the ghost house, we dont want to change back to Scared state
-            if (currentGhostState == GhostState.Eaten)
+            if (_currentGhostState == GhostState.Eaten)
                 return;
 
-            //Reset and change state
-            scaredTimer = 0f;
-            requestStateChange = true;
+            _scaredTimer = 0f;
+            _requestStateChange = true;
             ChangeState(GhostState.Flee);
         }
 
         #endregion
 
         #region Ghost Movement Related
-        /// <summary>
-        /// Handles ghost movement from board node to node
-        /// Called on Update
-        /// </summary>
-        protected void Movement()
+        private void Movement()
         {
-            if (!canMove)
+            if (!CanMove)
                 return;
 
             //Check to see if the destination is not null and if we are not at the ghost house
-            if (targetNode != currentNode && targetNode != null && !isInGhostHouse)
+            if (TargetNode != CurrentNode && TargetNode != null && !IsInGhostHouse)
             {
                 //Checks to see if the ghost passed the target node he was headed
                 if (PassedNode())
                 {
                     //In that case we update the current node 
-                    currentNode = targetNode;
-                    transform.position = currentNode.transform.position; //set our position
+                    CurrentNode = TargetNode;
+                    transform.position = CurrentNode.transform.position; //set our position
 
                     //Check if we are at a portal node, in that case, will be teleported
                     CheckForPortals();
 
                     //Choose the next destination based on the ghost current state
-                    targetNode = ChooseNextNode();
+                    TargetNode = ChooseNextNode();
 
-                    previousNode = currentNode; //set the previous location
+                    PreviousNode = CurrentNode; //set the previous location
 
                     //since the ghost is between nodes, on his way to another, set this to null
-                    currentNode = null;
+                    CurrentNode = null;
                 }
                 else // if the ghost didnt pass his target node
                 {
                     //Move in the current direction
-                    transform.localPosition += (Vector3)direction * currentMoveSpeed * Time.deltaTime;
+                    transform.localPosition += (Vector3)Direction * (_currentMoveSpeed * Time.deltaTime);
                 }
             }
         }
 
-        /// <summary>
-        /// This method will choose the next target node for the ghost
-        /// Called on Movement
-        /// </summary>
-        /// <returns> The next target node, next destination </returns>
         protected Node ChooseNextNode()
         {
-            //The position we are headed
-            Vector2 targetTile = Vector2.zero;
+            Vector2 targetTile;
 
-            //Switch between the States to find the next position
-            if (currentGhostState == GhostState.Chase)
-                targetTile = FindTargetPosition(); //Look for a position while Chasing Pacman
-            else if (currentGhostState == GhostState.Scatter)
-                targetTile = homeNode.transform.position; //Go to the home node if we are Scattering
-            else if (currentGhostState == GhostState.Flee || currentGhostState == GhostState.Blinking)
-                targetTile = FindRandomPosition(); //Choose a Random position if we are Scared/Frightened
-            else if (currentGhostState == GhostState.Eaten)
-                targetTile = ghostHouseNode.transform.position; //Go to the ghost house if we were eaten by Pacman
+            switch (_currentGhostState)
+            {
+                case GhostState.Chase:
+                    targetTile = FindTargetPosition();
+                    break;
+                case GhostState.Scatter:
+                    targetTile = HomeNode.transform.position;
+                    break;
+                case GhostState.Flee:
+                case GhostState.Blinking:
+                    targetTile = FindRandomPosition();
+                    break;
+                case GhostState.Eaten:
+                    targetTile = GhostHouseNode.transform.position;
+                    break;
+                default:
+                    targetTile = Vector2.zero;
+                    break;
+            }
 
-            //The node we should go
             Node moveToNode = null;
 
-            //Found nodes and directions based on the current position
             Node[] foundNodes = new Node[4];
             Vector2[] foundNodesDirection = new Vector2[4];
 
-            //How many nodes we found
             int nodeCounter = 0;
 
-            //Check all node neighbours of the current node we are at
-            for (int i = 0; i < currentNode.neighbours.Length; i++)
+            for (int i = 0; i < CurrentNode.Neighbours.Length; i++)
             {
-                //Ghosts are not allowed to switch direction
-                //Example: if we going Right, cant change to Left in the middle of the process
-                //Check the valid directions of that node and verifies if it isnt a switchback
-                if (currentNode.validDirections[i] != (Vector3)direction * -1)
+                if (CurrentNode.ValidDirections[i] != (Vector3)Direction * -1)
                 {
-                    //Then it found a valid node and direction to go
-                    foundNodes[nodeCounter] = currentNode.neighbours[i];
-                    foundNodesDirection[nodeCounter] = currentNode.validDirections[i];
+                    foundNodes[nodeCounter] = CurrentNode.Neighbours[i];
+                    foundNodesDirection[nodeCounter] = CurrentNode.ValidDirections[i];
                     nodeCounter++;
                 }
             }
 
-            //Only one node found
             if (foundNodes.Length == 1)
             {
-                //Set our next target node and direction
                 moveToNode = foundNodes[0];
-                direction = foundNodesDirection[0];
-                return moveToNode; // returns the node
+                Direction = foundNodesDirection[0];
+                return moveToNode;
             }
 
-            //Otherwise, we have to calculate the shortest distance between all the nodes found
             if (foundNodes.Length > 1)
             {
-                //Default value just in case
                 float leastDistance = 100000f;
 
-                //Loop through all found nodes until we find the best option
                 for (int i = 0; i < foundNodes.Length; i++)
                 {
                     if (foundNodesDirection[i] != Vector2.zero)
                     {
-                        //Calculate the distance from the position of the node to the target position we want to go
-                        //A straight line
                         float distance = GetDistance(foundNodes[i].transform.position, targetTile);
 
-                        //If it is smaller
                         if (distance < leastDistance)
                         {
-                            // set the distance
                             leastDistance = distance;
-                            moveToNode = foundNodes[i]; // the next target node
-                            direction = foundNodesDirection[i]; // the next direction
+                            moveToNode = foundNodes[i];
+                            Direction = foundNodesDirection[i];
                         }
                     }
                 }
             }
 
-            return moveToNode; // returns the target node
+            return moveToNode;
         }
 
-        /// <summary>
-        /// Since every ghost has a different way to find the player on the board, this method will be implemented
-        /// in the child classes with every ghost specification.
-        /// Called on ChooseNextNode
-        /// </summary>
-        /// <returns> The position the ghost is headed </returns>
         protected abstract Vector2 FindTargetPosition();
 
-        /// <summary>
-        /// This calculates a random position on the board.
-        /// </summary>
-        /// <returns>A random position.</returns>
-        protected Vector2 FindRandomPosition()
+        private Vector2 FindRandomPosition()
         {
             int x = Random.Range(0, 28);
             int y = Random.Range(0, 32);
@@ -500,84 +429,50 @@ namespace Buriola.AI
             return new Vector2(x, y);
         }
 
-        /// <summary>
-        /// This method checks if the ghost is inside the ghost house and switches it back to a Normal State
-        /// Called on Update
-        /// </summary>
-        protected void CheckIfItIsAtGhostHouse()
+        private void CheckIfItIsAtGhostHouse()
         {
-            if (currentGhostState == GhostState.Eaten)
+            if (_currentGhostState != GhostState.Eaten) return;
+            
+            if (PreviousNode == GhostHouseNode)
             {
-                //Checks if the ghost is in the Ghost House
-                if (previousNode == ghostHouseNode)
-                {            
-                    //Sets the target node, to get out of the house
-                    targetNode = ghostHouseNode.neighbours[0];
+                TargetNode = GhostHouseNode.Neighbours[0];
 
-                    //Sets the direction
-                    direction = Vector2.up;
+                Direction = Vector2.up;
                     
-                    //Change back to Chase State
-                    requestStateChange = true;
-                    ChangeState(GhostState.Chase);
+                _requestStateChange = true;
+                ChangeState(GhostState.Chase);
 
-                    //Call the board event
-                    if (board.onGhostReachedHouse != null)
-                        board.onGhostReachedHouse.Invoke();
-                }
+                Board.InvokeGhostReachedHouseEvent();
             }
         }
 
         #endregion
 
         #region Board Calculations
-
-        /// <summary>
-        /// This method checks if the ghost passed the target node he was headed
-        /// </summary>
-        /// <returns></returns>
-        protected bool PassedNode()
+        private bool PassedNode()
         {
-            //Calculates the magnitude of the vectors
-            float nodeToTarget = LengthFromNode(targetNode.transform.position);
+            float nodeToTarget = LengthFromNode(TargetNode.transform.position);
             float nodeToSelf = LengthFromNode(transform.localPosition);
 
-            //Check if it passed
             return nodeToSelf > nodeToTarget;
         }
 
-        /// <summary>
-        /// Checks if the current node is a Portal Node
-        /// </summary>
-        protected void CheckForPortals()
+        private void CheckForPortals()
         {
-            //Try to get a portal node from the board based on the current node position
-            PortalNode otherPortal = board.GetPortalNodeAtPosition(currentNode.transform.position);
-            if (otherPortal != null) // in case we find one
+            PortalNode otherPortal = Board.GetPortalNodeAtPosition(CurrentNode.transform.position);
+            if (otherPortal != null)
             {
-                //Teleports the ghost
                 transform.localPosition = otherPortal.gameObject.transform.position;
-                currentNode = otherPortal; // set the new current node
+                CurrentNode = otherPortal;
             }
         }
 
-        /// <summary>
-        /// Calculates the magnitude between two vectors
-        /// </summary>
-        /// <param name="targetPosition"> The position we are headed </param>
-        /// <returns>The squared magnitude between the two vectors </returns>
-        protected float LengthFromNode(Vector2 targetPosition)
+        private float LengthFromNode(Vector2 targetPosition)
         {
-            Vector2 vec = targetPosition - (Vector2)previousNode.transform.position;
+            Vector2 vec = targetPosition - (Vector2)PreviousNode.transform.position;
             return vec.sqrMagnitude;
         }
 
-        /// <summary>
-        /// Calculates distance between two vectors
-        /// </summary>
-        /// <param name="posA"> Vector 1 </param>
-        /// <param name="posB"> Vector 2 </param>
-        /// <returns>The Distance</returns>
         protected float GetDistance(Vector2 posA, Vector2 posB)
         {
             float dx = posA.x - posB.x;
@@ -592,131 +487,105 @@ namespace Buriola.AI
 
         #region GAME BOARDS EVENTS IMPLEMENTATION
 
-        /// <summary>
-        /// Method to subscribe to the board delegates
-        /// Called on Start
-        /// </summary>
-        protected void SubscribeToBoardEvents()
+        private void SubscribeToBoardEvents()
         {
-            board.onGameStart += OnGameStart;
-            board.onAfterGameStart += OnAfterGameStart;
-            board.onGameRestart += OnGameBoardRestart;
-            board.onAfterGameRestart += OnAfterGameBoardRestart;
-            board.onAfterGameRestart += SetGhostsSettings;
+            Board.OnGameStart += OnGameStart;
+            Board.OnAfterGameStart += OnAfterGameStart;
+            Board.OnGameRestart += OnGameBoardRestart;
+            Board.OnAfterGameRestart += OnAfterGameBoardRestart;
+            Board.OnAfterGameRestart += SetGhostsSettings;
 
-            //Using lambda expressions for short methods
-            board.onPacmanDied += delegate { ghostSprite.enabled = false; };
-            board.onSuperPacpointEaten += StartFleeState;
-            board.onGhostEaten += delegate { canMove = false; };
-            board.onAfterGhostEaten += delegate { canMove = true; };
+            Board.OnPacmanDied += OnPacmanDied;
+            Board.OnSuperPacpointEaten += StartFleeState;
+            Board.OnGhostEaten += OnGhostEaten;
+            Board.OnAfterGhostEaten += OnAfterGhostEaten;
 
-            board.onLevelWin += delegate
-            {
-                canMove = false;
-                ghostSprite.enabled = false;
-            };
+            Board.OnLevelWin += OnLevelWin;
         }
 
-        /// <summary>
-        /// Method to unsubscribe from the board delegates.
-        /// Called on OnDisable
-        /// </summary>
-        protected void UnsubscribeFromBoardEvents()
+        private void UnsubscribeFromBoardEvents()
         {
-            board.onGameStart -= OnGameStart;
-            board.onAfterGameStart -= OnAfterGameStart;
-            board.onGameRestart -= OnGameBoardRestart;
-            board.onAfterGameRestart -= OnAfterGameBoardRestart;
-            board.onAfterGameRestart -= SetGhostsSettings;
-            board.onPacmanDied -= delegate { ghostSprite.enabled = false; };
-            board.onSuperPacpointEaten -= StartFleeState;
+            Board.OnGameStart -= OnGameStart;
+            Board.OnAfterGameStart -= OnAfterGameStart;
+            Board.OnGameRestart -= OnGameBoardRestart;
+            Board.OnAfterGameRestart -= OnAfterGameBoardRestart;
+            Board.OnAfterGameRestart -= SetGhostsSettings;
 
-            board.onGhostEaten -= delegate { canMove = false; };
-            board.onAfterGhostEaten -= delegate { canMove = true; };
+            Board.OnPacmanDied -= OnPacmanDied;
+            Board.OnSuperPacpointEaten -= StartFleeState;
 
-            board.onLevelWin -= delegate
-            {
-                canMove = false;
-                ghostSprite.enabled = false;
-            };
+            Board.OnGhostEaten -= OnGhostEaten;
+            Board.OnAfterGhostEaten -= OnAfterGhostEaten;
+
+            Board.OnLevelWin -= OnLevelWin;
         }
 
-        /// <summary>
-        /// Implementation of IGameBoardEvents interface
-        /// Subscribes to OnGameStart board delegate
-        /// </summary>
         public void OnGameStart()
         {
-            //Enables sprite at game start
-            ghostSprite.enabled = true;
-            caughtPacman = false;
+            GhostSprite.enabled = true;
+            _caughtPacman = false;
 
-            //Init variables
             SetGhostsSettings();
         }
 
-        /// <summary>
-        /// Implementation of IGameBoardEvents interface
-        /// Subscribes to OnAfterGameStart board delegate
-        /// </summary>
         public void OnAfterGameStart()
         {
-            //Allow movement
-            canMove = true;
-            //Set next destination
-            targetNode = ChooseNextNode();
+            CanMove = true;
+            TargetNode = ChooseNextNode();
         }
 
-        /// <summary>
-        /// Implementation of IGameBoardEvents interface
-        /// Subscribe to OnGameBoardRestart board delegate
-        /// This method is virtual because every ghost has a different initialization, needs to be overrided
-        /// </summary>
         public virtual void OnGameBoardRestart()
         {
-            //Disable movement, sprite and request a state change
-            canMove = false;
-            requestStateChange = true;
-            caughtPacman = false;
-            ghostSprite.enabled = false;
+            CanMove = false;
+            _requestStateChange = true;
+            _caughtPacman = false;
+            GhostSprite.enabled = false;
 
-            //Reset target destiination
-            targetNode = null;
-            currentNode = startingNode; //Reset to starting node
-            previousNode = currentNode;
+            TargetNode = null;
+            CurrentNode = StartingNode;
+            PreviousNode = CurrentNode;
 
-            //Reset ghost mode index to reinit the Scatter/Chase loop
-            //Reset timers
-            modeIndex = 0;
-            timer = 0f;
-            scaredTimer = 0f;
+            _modeIndex = 0;
+            _timer = 0f;
+            _scaredTimer = 0f;
 
-            //Set the initial position
-            transform.position = startingNode.transform.localPosition;
+            transform.position = StartingNode.transform.localPosition;
 
-            //Change state
             ChangeState(GhostState.Scatter);
         }
 
-        /// <summary>
-        /// Implementation of IGameBoardEvents interface
-        /// Subscribe to OnAfterGameBoardRestart board delegate
-        /// /// This method is virtual because every ghost has a different initial direction, needs to be overrided
-        /// </summary>
         public virtual void OnAfterGameBoardRestart()
         {
-            //Enables sprite
-            ghostSprite.enabled = true;
+            GhostSprite.enabled = true;
 
-            //Set direction and next destination
-            direction = Vector2.left;
-            targetNode = ChooseNextNode();
-            previousNode = currentNode;
+            Direction = Vector2.left;
+            TargetNode = ChooseNextNode();
+            PreviousNode = CurrentNode;
 
-            //Allow movement
-            canMove = true;
+            CanMove = true;
         }
 
+        private void OnPacmanDied()
+        {
+            GhostSprite.enabled = false;
+        }
+
+        public void OnGhostEaten()
+        {
+            CanMove = false;
+        }
+
+        public void OnAfterGhostEaten()
+        {
+            CanMove = true;
+        }
+
+        public void OnLevelWin()
+        {
+            CanMove = false;
+            GhostSprite.enabled = false;
+        }
+        
         #endregion
     }
 }

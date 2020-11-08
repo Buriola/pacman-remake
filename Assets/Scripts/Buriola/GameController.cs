@@ -11,12 +11,12 @@ namespace Buriola
     {
         //Singleton
         private static GameController instance;
-        public static GameController Instance { get { return instance; } }
+        public static GameController Instance => instance;
 
-        public static bool isOnePlayerGame;
+        public static bool IsOnePlayerGame;
         public const string HIGH_SCORE = "HighScore";
 
-        private bool changingScene;
+        private bool _changingScene;
 
         private void Awake()
         {
@@ -24,7 +24,7 @@ namespace Buriola
                 Destroy(gameObject);
 
             instance = this;
-            isOnePlayerGame = true;
+            IsOnePlayerGame = true;
 
             DontDestroyOnLoad(gameObject);
         }
@@ -70,9 +70,9 @@ namespace Buriola
         public void RequestSceneChange(int sceneID)
         {
             //Can only request scene change once
-            if (!changingScene)
+            if (!_changingScene)
             {
-                changingScene = true;
+                _changingScene = true;
                 StartCoroutine(ChangeScene(sceneID));
             }
         }
@@ -85,7 +85,7 @@ namespace Buriola
         private IEnumerator ChangeScene(int sceneID)
         {
             yield return SceneManager.LoadSceneAsync(sceneID);
-            changingScene = false;
+            _changingScene = false;
         }
 
     }

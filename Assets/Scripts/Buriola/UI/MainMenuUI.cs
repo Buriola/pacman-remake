@@ -1,96 +1,96 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Buriola.UI
 {
-    /// <summary>
-    /// Main menu class
-    /// </summary>
     public class MainMenuUI : MonoBehaviour
     {
-        //Aux bools to set the arrow
-        private bool isPlayerOne = true;
-        private bool choosingMap = false;
+        private bool _isPlayerOne;
+        private bool _choosingMap;
 
-        //Player select menu
-        public GameObject playerSelectObject;
-        //Map select menu
-        public GameObject mapSelectObject;
+        [FormerlySerializedAs("playerSelectObject")] 
+        public GameObject PlayerSelectObject;
+        [FormerlySerializedAs("mapSelectObject")] 
+        public GameObject MapSelectObject;
 
-        public Text playerOneText;
-        public Text playerTwoText;
-        public Text arrowText;
+        [FormerlySerializedAs("playerOneText")] 
+        public Text PlayerOneText;
+        [FormerlySerializedAs("playerTwoText")] 
+        public Text PlayerTwoText;
+        [FormerlySerializedAs("arrowText")] 
+        public Text ArrowText;
 
         //Arrow positions
-        private Vector3 upPosition;
-        private Vector3 downPosition;
+        private Vector3 _upPosition;
+        private Vector3 _downPosition;
 
         private void Start()
         {
-            upPosition = new Vector3(arrowText.transform.localPosition.x, playerOneText.transform.localPosition.y,
-                            arrowText.transform.localPosition.z);
+            _upPosition = new Vector3(ArrowText.transform.localPosition.x, PlayerOneText.transform.localPosition.y,
+                            ArrowText.transform.localPosition.z);
 
-            downPosition = arrowText.transform.localPosition = new Vector3(arrowText.transform.localPosition.x, playerTwoText.transform.localPosition.y,
-                        arrowText.transform.localPosition.z);
+            _downPosition = ArrowText.transform.localPosition = new Vector3(ArrowText.transform.localPosition.x, PlayerTwoText.transform.localPosition.y,
+                        ArrowText.transform.localPosition.z);
 
-            playerSelectObject.SetActive(true);
-            mapSelectObject.SetActive(false);
+            PlayerSelectObject.SetActive(true);
+            MapSelectObject.SetActive(false);
 
-            choosingMap = false;
-            isPlayerOne = true;
-            arrowText.transform.localPosition = upPosition;
+            _choosingMap = false;
+            _isPlayerOne = true;
+            ArrowText.transform.localPosition = _upPosition;
         }
 
         private void Update()
         {
             if (Input.GetAxis("Vertical") > 0)
             {
-                if (!choosingMap)
+                if (!_choosingMap)
                 {
-                    if (!isPlayerOne)
+                    if (!_isPlayerOne)
                     {
-                        isPlayerOne = true;
-                        arrowText.transform.localPosition = upPosition;
+                        _isPlayerOne = true;
+                        ArrowText.transform.localPosition = _upPosition;
 
-                        GameController.isOnePlayerGame = true;
+                        GameController.IsOnePlayerGame = true;
                     }
                 }
                 else
                 {
-                    arrowText.transform.localPosition = upPosition;
+                    ArrowText.transform.localPosition = _upPosition;
                 }
             }
             else if (Input.GetAxis("Vertical") < 0)
             {
-                if (!choosingMap)
+                if (!_choosingMap)
                 {
-                    if (isPlayerOne)
+                    if (_isPlayerOne)
                     {
-                        isPlayerOne = false;
-                        arrowText.transform.localPosition = downPosition;
+                        _isPlayerOne = false;
+                        ArrowText.transform.localPosition = _downPosition;
 
-                        GameController.isOnePlayerGame = false;
+                        GameController.IsOnePlayerGame = false;
                     }
                 }
                 else
                 {
-                    arrowText.transform.localPosition = downPosition;
+                    ArrowText.transform.localPosition = _downPosition;
                 }
             }
 
             if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Return))
             {
-                if (!choosingMap)
+                if (!_choosingMap)
                 {
-                    choosingMap = true;
-                    playerSelectObject.SetActive(false);
-                    mapSelectObject.SetActive(true);
+                    _choosingMap = true;
+                    PlayerSelectObject.SetActive(false);
+                    MapSelectObject.SetActive(true);
 
-                    arrowText.transform.localPosition = upPosition;
+                    ArrowText.transform.localPosition = _upPosition;
                 }
                 else
                 {
-                    if (arrowText.transform.localPosition == upPosition)
+                    if (ArrowText.transform.localPosition == _upPosition)
                         GameController.Instance.RequestSceneChange(2);
                     else
                         GameController.Instance.RequestSceneChange(3);
@@ -99,16 +99,16 @@ namespace Buriola.UI
 
             if (Input.GetKeyDown(KeyCode.Escape))
             {
-                if (choosingMap)
+                if (_choosingMap)
                 {
-                    mapSelectObject.SetActive(false);
-                    playerSelectObject.SetActive(true);
+                    MapSelectObject.SetActive(false);
+                    PlayerSelectObject.SetActive(true);
 
-                    isPlayerOne = true;
-                    GameController.isOnePlayerGame = true;
+                    _isPlayerOne = true;
+                    GameController.IsOnePlayerGame = true;
 
-                    arrowText.transform.localPosition = upPosition;
-                    choosingMap = false;
+                    ArrowText.transform.localPosition = _upPosition;
+                    _choosingMap = false;
                 }
             }
         }
