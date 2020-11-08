@@ -1,8 +1,7 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
+using Buriola;
 using UnityEngine;
 using UnityEngine.UI;
-using Pacman.Controllers;
 
 namespace Pacman.UI
 {
@@ -13,37 +12,37 @@ namespace Pacman.UI
     {
         #region Variables
         [SerializeField]
-        private Color gameOverColor;
+        private Color gameOverColor = default;
         [SerializeField]
-        private Color playerInfoColor;
+        private Color playerInfoColor = default;
 
         [SerializeField]
-        private Text playerText;
+        private Text playerText = null;
         [SerializeField]
-        private Text readyText;
+        private Text readyText = null;
 
         [SerializeField]
-        private Text highScoreText;
+        private Text highScoreText = null;
         [SerializeField]
-        private Text playerOneScore;
+        private Text playerOneScore = null;
         [SerializeField]
-        private Text playerTwoScore;
+        private Text playerTwoScore = null;
         [SerializeField]
-        private Text playerTwoTitle;
+        private Text playerTwoTitle = null;
         [SerializeField]
-        private Text ghostConsumedText;
+        private Text ghostConsumedText = null;
         [SerializeField]
-        private Text fruitConsumedText;
+        private Text fruitConsumedText = null;
 
         [SerializeField]
-        private Image[] pacmanLives;
+        private Image[] pacmanLives = default;
         [SerializeField]
-        private Image[] levelFruits;
+        private Image[] levelFruits = default;
 
         [SerializeField]
-        private Animator playerOneUI;
+        private Animator playerOneUI = null;
         [SerializeField]
-        private Animator playerTwoUI;
+        private Animator playerTwoUI = null;
         #endregion
 
         private void Start()

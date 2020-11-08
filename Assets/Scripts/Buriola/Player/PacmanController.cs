@@ -26,7 +26,7 @@ namespace Pacman.Controllers
 
         //Navigation nodes
         [SerializeField]
-        private Node startingNode; //Starting position
+        private Node startingNode = null; //Starting position
         private Node currentNode; 
         private Node targetNode;
         private Node previousNode;
@@ -40,11 +40,11 @@ namespace Pacman.Controllers
 
         //Audio related
         [SerializeField]
-        private AudioClip pacmanDeathSound;
+        private AudioClip pacmanDeathSound = null;
         [SerializeField]
-        private AudioClip chompOneSound;
+        private AudioClip chompOneSound = null;
         [SerializeField]
-        private AudioClip chompTwoSound;
+        private AudioClip chompTwoSound = null;
         #endregion
 
         /// <summary>

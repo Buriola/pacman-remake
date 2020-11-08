@@ -12,7 +12,7 @@ namespace Pacman.AI
     {
         //Need a reference of the Red Ghost to calculate the next position
         [SerializeField]
-        private BlinkyAI blinky;
+        private BlinkyAI blinky = null;
 
         protected override void Start()
         {

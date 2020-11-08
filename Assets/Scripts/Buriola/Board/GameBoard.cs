@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-
+using Buriola;
 using Pacman.UI;
 using Pacman.Controllers;
 using Pacman.AI;
@@ -95,19 +95,17 @@ namespace Pacman
         [Header("Audio Settings")]
         private AudioSource audioS;
         [SerializeField]
-        private AudioClip introTone;
+        private AudioClip backgroundSound = null;
         [SerializeField]
-        private AudioClip backgroundSound;
+        private AudioClip ghostsFrightnedSound = null;
         [SerializeField]
-        private AudioClip ghostsFrightnedSound;
+        private AudioClip ghostsRetreatSound = null;
         [SerializeField]
-        private AudioClip ghostsRetreatSound;
+        private AudioClip ghostEatenSound = null;
         [SerializeField]
-        private AudioClip ghostEatenSound;
+        private AudioClip bonusItemEaten = null;
         [SerializeField]
-        private AudioClip bonusItemEaten;
-        [SerializeField]
-        private AudioClip winLevelClip;
+        private AudioClip winLevelClip = null;
 
         //The available bonus Items
         [Header("Bonus Items")]
@@ -117,7 +115,7 @@ namespace Pacman
         //UI reference
         [Header("UI")]
         [SerializeField]
-        private GameUI gameUI;
+        private GameUI gameUI = null;
         #endregion
 
         #region UNITY FUNCTIONS

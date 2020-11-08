@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Buriola;
 using UnityEngine;
 using UnityEngine.UI;
-using Pacman.Controllers;
 
 namespace Pacman.UI
 {

@@ -2,9 +2,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-using Pacman.UI;
-
-namespace Pacman.Controllers
+namespace Buriola
 {
     /// <summary>
     /// The main game controller. Responsible for changing scenes and saving score
