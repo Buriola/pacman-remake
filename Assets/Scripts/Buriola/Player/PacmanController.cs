@@ -1,9 +1,9 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
+using Buriola.Board;
 using UnityEngine;
-using Pacman.Interfaces;
+using Buriola.Interfaces;
 
-namespace Pacman.Controllers
+namespace Buriola.Player
 {
     /// <summary>
     /// Represents Pacman and receives User Input. Implements the IGameBoardEvents

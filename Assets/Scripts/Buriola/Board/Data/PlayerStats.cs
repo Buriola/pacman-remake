@@ -1,11 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace Pacman
+﻿namespace Buriola.Board.Data
 {
     [System.Serializable]
-    ///Class to represent player data
     public class PlayerStats
     {
         private int pacmanLives; //Lives

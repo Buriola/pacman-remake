@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace Pacman
+﻿namespace Buriola.Board
 {
     /// <summary>
     /// Represents a portal node. Derives from Node

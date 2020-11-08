@@ -1,11 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Buriola.Board;
+using Buriola.Board.Data;
 using UnityEngine;
-using Pacman.Controllers;
-using System.Linq;
-using Pacman.Interfaces;
+using Buriola.Player;
+using Buriola.Interfaces;
 
-namespace Pacman.AI
+namespace Buriola.AI
 {
     /// <summary>
     /// This is the base class of every ghost. It implements the IEatable interface to be able to collide with Pacman
@@ -155,7 +154,7 @@ namespace Pacman.AI
             if (board.currentLevelDifficulty != null)
             {
                 //Gets the board current level difficulty and updates all variables
-                Data.LevelDifficulty difficulty = board.currentLevelDifficulty;
+                LevelDifficulty difficulty = board.currentLevelDifficulty;
 
                 normalMoveSpeed = difficulty.ghostsSpeed;
                 scaredMoveSpeed = difficulty.ghostScaredSpeed;

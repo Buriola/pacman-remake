@@ -1,9 +1,9 @@
 ﻿using System.Collections;
-using Buriola;
+using Buriola.Board;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Pacman.UI
+namespace Buriola.UI
 {
     /// <summary>
     /// Class to handle UI for the game

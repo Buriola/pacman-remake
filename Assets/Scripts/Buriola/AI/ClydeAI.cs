@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Pacman.AI
+namespace Buriola.AI
 {
     /// <summary>
     /// This class represents Clyde, the orange ghost. Derives from Pinky

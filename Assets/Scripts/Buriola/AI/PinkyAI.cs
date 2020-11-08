@@ -1,9 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Pacman.Interfaces;
+﻿using UnityEngine;
 
-namespace Pacman.AI
+namespace Buriola.AI
 {
     /// <summary>
     /// This class represents the Pinky ghost or Pink Ghost. Derived from GhostAI.

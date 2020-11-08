@@ -1,9 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Pacman.Interfaces;
+﻿using UnityEngine;
 
-namespace Pacman.AI
+namespace Buriola.AI
 {
     /// <summary>
     /// This class represents the Blinky ghost or Red Ghost. Derived from the Ghost class.

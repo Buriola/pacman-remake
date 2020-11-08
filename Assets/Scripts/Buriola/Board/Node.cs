@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Pacman
+namespace Buriola.Board
 {
     /// <summary>
     /// Represents a point in the board with valid directions and neighbours

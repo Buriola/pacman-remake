@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Pacman.Data
+namespace Buriola.Board.Data
 {
     /// <summary>
     /// Represents the level difficulty

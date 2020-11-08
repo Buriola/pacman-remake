@@ -1,8 +1,7 @@
-﻿using Buriola;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
-namespace Pacman.UI
+namespace Buriola.UI
 {
     /// <summary>
     /// Main menu class

@@ -1,12 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using Buriola.Board;
 
-namespace Pacman
+namespace Buriola.Pickups
 {
-    /// <summary>
-    /// Represents a Superpacpoint, derives from Pacpoint
-    /// </summary>
     public class SuperPacpoint : Pacpoint
     {
         public override void OnEaten()

@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using Buriola;
-using Pacman.UI;
-using Pacman.Controllers;
-using Pacman.AI;
-using Pacman.Data;
+using Buriola.UI;
+using Buriola.Player;
+using Buriola.AI;
+using Buriola.Board.Data;
+using Buriola.Pickups;
 
-namespace Pacman
+namespace Buriola.Board
 {
     /// <summary>
     /// Main controller of the game loop

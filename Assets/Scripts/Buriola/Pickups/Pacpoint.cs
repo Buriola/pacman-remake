@@ -1,9 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Buriola.Board;
 using UnityEngine;
-using Pacman.Interfaces;
+using Buriola.Interfaces;
 
-namespace Pacman
+namespace Buriola.Pickups
 {
     /// <summary>
     /// Represents a Pacpoint/Dot/Pellet that Pacman can eat

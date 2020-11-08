@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Pacman.AI
+namespace Buriola.AI
 {
     /// <summary>
     /// This class represents Inky, the Blue Ghost. Derives from Pinky because this ghost also has a Release time

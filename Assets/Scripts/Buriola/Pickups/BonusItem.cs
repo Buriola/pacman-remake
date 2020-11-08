@@ -1,8 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Buriola.Board;
 using UnityEngine;
 
-namespace Pacman
+namespace Buriola.Pickups
 {
     /// <summary>
     /// Represents a Bonus Item. Derives from Pacpoint

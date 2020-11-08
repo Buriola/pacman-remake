@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace Pacman.AI
+﻿namespace Buriola.AI
 {
     /// <summary>
     /// This class represents a ghost mode
