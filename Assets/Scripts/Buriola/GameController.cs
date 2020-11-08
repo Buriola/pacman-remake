@@ -4,9 +4,6 @@ using UnityEngine.SceneManagement;
 
 namespace Buriola
 {
-    /// <summary>
-    /// The main game controller. Responsible for changing scenes and saving score
-    /// </summary>
     public class GameController : MonoBehaviour
     {
         //Singleton
@@ -87,6 +84,5 @@ namespace Buriola
             yield return SceneManager.LoadSceneAsync(sceneID);
             _changingScene = false;
         }
-
     }
 }
