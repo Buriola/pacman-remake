@@ -14,7 +14,7 @@ namespace Buriola
         public static GameController Instance => instance;
 
         public static bool IsOnePlayerGame;
-        public const string HIGH_SCORE = "HighScore";
+        private const string HIGH_SCORE = "HighScore";
 
         private bool _changingScene;
 
