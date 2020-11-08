@@ -1,6 +1,7 @@
 # A Pacman Remake game made with Unity
 
-### Current Unity Version: 2019.4.12f
+### Original Unity Version: 2019.1.3f1
+### Current Unity Version: 2019.4.12f1
 
 - A faithful pacman remake made in one week for a game jam.
 - This is a sample of my work as a gameplay programmer and does not reflect my current skills, I made it in late 2019.
