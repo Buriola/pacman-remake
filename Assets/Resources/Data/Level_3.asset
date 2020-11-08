@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40c9373be0a89f949aa0ac8f29f38fad, type: 3}
+  m_Name: Level_3
+  m_EditorClassIdentifier: 
+  ghostsSpeed: 7.9
+  ghostScaredSpeed: 4.9
+  ghostsEatenSpeed: 15
+  pinkyReleaseTime: 3
+  inkyReleaseTime: 10
+  clydeReleaseTime: 15
+  ghostModes:
+  - scatterModeTime: 7
+    chaseModeTime: 20
+  - scatterModeTime: 7
+    chaseModeTime: 20
+  - scatterModeTime: 5
+    chaseModeTime: 1033
+  - scatterModeTime: 1
+    chaseModeTime: 1033
+  ghostsScareDuration: 8
+  ghostsStartBlinkingAt: 5
+  pacmanSpeed: 9
+  bonusItem: {fileID: 393086358377079179, guid: 35f5a75b6321a2f4893bc3a05152a1b0,
+    type: 3}
