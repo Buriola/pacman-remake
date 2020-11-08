@@ -14,7 +14,7 @@
 - Two different boards: Classic Pacman / Ms Pacman.
 - Ghosts behaviors implemented like the originals made back in 1980. (https://gameinternals.com/understanding-pac-man-ghost-behavior)
 - Bonus items -> The fruits that appear mid level while playing
-- Local Multiplayer: Each player plays once at a time. Player with the biggest score, wins.
+- Local Multiplayer -> Each player plays one at a time. Player with the biggest score wins.
 
 
 ![image](https://user-images.githubusercontent.com/16143274/98482304-51e02600-21df-11eb-967c-879e56489f08.png)
